@@ -36,24 +36,74 @@ def handle_invalid_usage(error):
 def sitemap():
     return generate_sitemap(app)
 
-@app.route('/user', methods=['GET'])
-def handle_hello():
+@app.route('/people', methods=['GET'])
+def characters_list():
+    # query all characters in the database. But is this really?
+    characters = Characters.query.all()
+    # prints the representation we have defined. Is each of them a class instance? From the model?
+    print(characters)
+    characters = list(map(lambda x: x.serialize(), characters))
+    print(characters)
+    # what does the jsonify do? It looks like it transforms our data into a HTTP request? 
+    print(jsonify(characters))
+    return jsonify(characters), 200
 
-    response_body = {
-        "msg": "Hello, this is your GET /user response "
-    }
-
-    return jsonify(response_body), 200
+@app.route("/people/<int:id>", methods=['GET'])
+def person_detail(id):
+    person = db.get_or_404(Characters, id)
+    person = person.serialize()
+    return jsonify(person)
 
 @app.route('/planets', methods=['GET'])
 def planets_list():
     planets = Planets.query.all()
+    # This is what the serialize when defined inside the models.py script
+    print(planets)
     def serialize(planet):
         return {
-            "Planet" : planet.name
+            "id" : planet.planet_id,
+            "planet" : planet.name,
+            "terrain" : planet.terrain,
+            "climate" : planet.climate,
+            "population" : planet.population,
+            "diameter" : planet.diameter
         }
     planets = list(map(serialize, planets))
     return jsonify(planets), 200
+
+@app.route("/planets/<int:id>", methods=['GET'])
+def planet_detail(id):
+    planet = db.get_or_404(Planets, id)
+    planet = planet.serialize()
+    return jsonify(planet)
+
+
+@app.route('/starships', methods=['GET'])
+def starships_list():
+    starships = Starships.query.all()
+    starships = list(map(lambda x: x.serialize(), starships))
+    return jsonify(starships), 200
+
+
+@app.route("/starships/<int:id>", methods=['GET'])
+def starship_detail(id):
+    starship = db.get_or_404(Starships, id)
+    starship = starship.serialize()
+    return jsonify(starship)
+
+
+@app.route('/users', methods=['GET'])
+def users_list():
+    users = User.query.all()
+    users = list(map(lambda x: x.serialize(), users))
+    return jsonify(users), 200
+
+
+@app.route("/users/favourites")
+def user_by_username(username):
+    user = db.one_or_404(db.select(User).filter_by(username=username))
+    return render_template("show_user.html", user=user)
+
 
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':
