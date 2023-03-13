@@ -48,7 +48,7 @@ class Planets(db.Model):
 class Characters(db.Model):
     character_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), unique=True, nullable=False)
-    homeworld_id = db.Column(db.Integer, db.ForeignKey(Planets.planet_id))
+    homeworld_id = db.Column(db.Integer) #db.ForeignKey(Planets.planet_id) 
     gender = db.Column(db.String(10))
     hairColor = db.Column(db.String(250))
     skinColor = db.Column(db.String(250))
@@ -72,7 +72,7 @@ class Characters(db.Model):
 class Starships(db.Model):
     starship_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), unique=True, nullable=False)
-    pilot_id = db.Column(db.Integer, db.ForeignKey(Characters.character_id))
+    pilot_id = db.Column(db.Integer) #db.ForeignKey(Characters.character_id)
     model = db.Column(db.String(500))
     manufacturer = db.Column(db.String(250))
     cost = db.Column(db.Integer)
@@ -99,10 +99,10 @@ class Starships(db.Model):
 # The user Favourites from Starwars API Datatable. It is a kind of connection Datatable between each userid and its own favourites
 class Favourites(db.Model):
     favourite_id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey(User.id), nullable=False)
-    character_id = db.Column(db.Integer, db.ForeignKey(Characters.character_id))
-    planet_id = db.Column(db.Integer, db.ForeignKey(Planets.planet_id))
-    starship_id = db.Column(db.Integer, db.ForeignKey(Starships.starship_id))
+    user_id = db.Column(db.Integer, nullable=False) #db.ForeignKey(User.id), nullable=False
+    character_id = db.Column(db.Integer) #db.ForeignKey(Characters.character_id
+    planet_id = db.Column(db.Integer) #db.ForeignKey(Planets.planet_id)
+    starship_id = db.Column(db.Integer) #db.ForeignKey(Starships.starship_id)
 
     def __repr__(self):
         return '<Favourite %r>' % self.favourite_id
