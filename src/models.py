@@ -108,10 +108,15 @@ class Favourites(db.Model):
         return '<Favourite %r>' % self.favourite_id
 
     def serialize(self):
-        return {
+        favourite = {
             "id": self.favourite_id,
-            "user_id": self.user_id,
-            "character_id": self.character_id,
-            "planet_id": self.planet_id,
-            "starship_id": self.starship_id
+            "user_id": self.user_id
         }
+        if self.character_id is not None:
+            favourite["character_id"] = self.character_id
+        elif self.planet_id is not None:
+            favourite["planet_id"] = self.planet_id
+        elif self.starship_id is not None:
+            favourite["starship_id"] = self.starship_id
+        
+        return favourite

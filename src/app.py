@@ -9,11 +9,17 @@ from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
 from models import db, User, Favourites, Planets, Characters, Starships
-#from models import Person
+from flask_jwt_extended import JWTManager
 
+# Setup the Flask
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 
+# Setup the Flask-JWT-Extended extension
+app.config["JWT_SECRET_KEY"] = "super-secret"  # Change this "super secret" with something else!
+jwt = JWTManager(app)
+
+# Setup PostgresSQL Database ??
 db_url = os.getenv("DATABASE_URL")
 if db_url is not None:
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace("postgres://", "postgresql://")
@@ -97,6 +103,12 @@ def users_list():
     users = User.query.all()
     users = list(map(lambda x: x.serialize(), users))
     return jsonify(users), 200
+
+@app.route('/favourites', methods=['GET'])
+def favourites_list():
+    favourites = Favourites.query.all()
+    favourites = list(map(lambda x: x.serialize(), favourites))
+    return jsonify(favourites), 200
 
 
 @app.route("/users/favourites")
