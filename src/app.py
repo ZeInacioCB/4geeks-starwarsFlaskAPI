@@ -9,7 +9,7 @@ from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
 from models import db, User, Favourites, Planets, Characters, Starships
-from flask_jwt_extended import JWTManager
+from flask_jwt_extended import JWTManager, create_access_token
 
 # Setup the Flask
 app = Flask(__name__)
@@ -41,6 +41,9 @@ def handle_invalid_usage(error):
 @app.route('/')
 def sitemap():
     return generate_sitemap(app)
+
+
+######################################################### Methods for Starwars related resources #########################################################################################################################
 
 @app.route('/people', methods=['GET'])
 def characters_list():
@@ -83,13 +86,11 @@ def planet_detail(id):
     planet = planet.serialize()
     return jsonify(planet)
 
-
 @app.route('/starships', methods=['GET'])
 def starships_list():
     starships = Starships.query.all()
     starships = list(map(lambda x: x.serialize(), starships))
     return jsonify(starships), 200
-
 
 @app.route("/starships/<int:id>", methods=['GET'])
 def starship_detail(id):
@@ -98,11 +99,99 @@ def starship_detail(id):
     return jsonify(starship)
 
 
+######################################################### Methods for users and favourites resources #########################################################################################################################
+
+# get all users
 @app.route('/users', methods=['GET'])
 def users_list():
     users = User.query.all()
     users = list(map(lambda x: x.serialize(), users))
     return jsonify(users), 200
+    
+# create a new user
+@app.route('/user', methods = ['POST'])
+def add_user():
+    # Create new user class
+    user = User()
+    # Get json from POST request
+    user_json = request.get_json()
+    #add data from json into newly created User
+    user.email = user_json["email"]
+    user.password = user_json["password"]
+    user.is_active = True
+    # add new User to the DB
+    db.session.add(user)
+    db.session.commit()
+    # create a response
+    response = {
+        "msg": "User successfully created"
+    }
+    # return response
+    return jsonify(response), 201
+
+# get a user favourites
+@app.route('/user/favourites', methods = ['GET'])
+def user_favourites():
+    hardcoded_user_id = 3
+    favourites = db.session.query(Favourites).filter(Favourites.user_id == hardcoded_user_id)
+    print(list(favourites)) #print a list of the filtered objects
+    favourites = list(map(lambda x: x.serialize(), favourites))
+    return jsonify(favourites), 200
+
+# create a new favourite planet
+@app.route('/favorite/planet/<int:planet_id>', methods = ['POST'])
+def add_planet_to_favourites(planet_id):
+    hardcoded_user_id = 3
+
+    favourite = Favourites()
+
+    favourite.user_id = hardcoded_user_id
+    favourite.planet_id = planet_id
+
+    db.session.add(favourite)
+    db.session.commit()
+
+    response = {
+        "msg": f'Planet {planet_id} added to user {hardcoded_user_id}'
+    }
+    return jsonify(response), 201
+
+# create a new favourite character
+@app.route('/favourite/people/<int:character_id>', methods = ['POST'])
+def add_character_to_favourites(character_id):
+    hardcoded_user_id = 3
+
+    favourite = Favourites()
+
+    favourite.user_id = hardcoded_user_id
+    favourite.character_id = character_id
+
+    db.session.add(favourite)
+    db.session.commit()
+
+    response = {
+        "msg": f'Character {character_id} added to user {hardcoded_user_id}'
+    }
+    return jsonify(response), 201
+
+# create a new favourite starship
+@app.route('/favourite/starships/<int:starship_id>', methods = ['POST'])
+def add_starship_to_favourites(starship_id):
+    hardcoded_user_id = 4
+
+    favourite = Favourites()
+
+    favourite.user_id = hardcoded_user_id
+    favourite.character_id = starship_id
+
+    db.session.add(favourite)
+    db.session.commit()
+
+    response = {
+        "msg": f'Starship {starship_id} added to user {hardcoded_user_id}'
+    }
+    return jsonify(response), 201
+
 
 @app.route('/favourites', methods=['GET'])
 def favourites_list():
@@ -110,11 +199,55 @@ def favourites_list():
     favourites = list(map(lambda x: x.serialize(), favourites))
     return jsonify(favourites), 200
 
+# create a new favourite planet
+@app.route('/favourite/planet/<int:planet_id>', methods = ['DELETE'])
+def remove_planet_from_favourites(planet_id):
+    hardcoded_user_id = 3
+    # check if planet id exists within the user
+    exists = db.session.query(
+        db.exists()
+        .where(Favourites.user_id == hardcoded_user_id)
+        .where(Favourites.planet_id == planet_id)
+    ).scalar()
+    
+    if exists:
+        favourite = db.session.query(Favourites).where(
+           Favourites.user_id == hardcoded_user_id, Favourites.planet_id == planet_id 
+        ).first()
+        
+        db.session.delete(favourite)
+        db.session.commit()
 
-@app.route("/users/favourites")
+        response = {
+            "msg": f'Planet {planet_id} removed from favourites'
+        }
+        
+    else:
+        response = {
+            "msg": f'Planet {planet_id} does not exist'
+        }
+
+    return jsonify(response), 202
+
+@app.route("/users/favourites", methods=['POST'])
 def user_by_username(username):
     user = db.one_or_404(db.select(User).filter_by(username=username))
     return render_template("show_user.html", user=user)
+
+
+@app.route("/token", methods=["POST"])
+def create_token():
+    username = request.json.get("username", None)
+    password = request.json.get("password", None)
+    # Query your database for username and password
+    user = User.query.filter_by(username=username, password=password).first()
+    if user is None:
+        # the user was not found on the database
+        return jsonify({"msg": "Bad username or password"}), 401
+    
+    # create a new token with the user id inside
+    access_token = create_access_token(identity=user.id)
+    return jsonify({ "token": access_token, "user_id": user.id })
 
 
 # this only runs if `$ python src/app.py` is executed
